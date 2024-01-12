@@ -1,0 +1,140 @@
+package com.example.taskapi;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.Date;
+
+@Document(collection = "tasks")
+public class Task {
+    @Id
+    private String id;
+    private String name;
+    private String assignee;
+    private String project;
+    private Date startTime;
+    private String rajeshSinghProperty;
+
+    // getters and setters
+}
+package com.example.taskapi;
+
+import org.springframework.data.mongodb.repository.MongoRepository;
+
+import java.util.List;
+
+public interface TaskRepository extends MongoRepository<Task, String> {
+    List<Task> findByNameContaining(String name);
+
+    List<Task> findFirst10ByAssigneeOrderByStartTime(String assignee);
+}
+package com.example.taskapi;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class TaskService {
+
+    @Autowired
+    private TaskRepository taskRepository;
+
+    public List<Task> getAllTasks() {
+        return taskRepository.findAll();
+    }
+
+    public Task getTaskById(String id) {
+        return taskRepository.findById(id).orElse(null);
+    }
+
+    public List<Task> findTasksByName(String name) {
+        return taskRepository.findByNameContaining(name);
+    }
+
+    public List<Task> findFirst10TasksByAssignee(String assignee) {
+        return taskRepository.findFirst10ByAssigneeOrderByStartTime(assignee);
+    }
+
+    public Task createTask(Task task) {
+        // Generate rajeshSinghProperty here
+        task.setRajeshSinghProperty(generateRandomString());
+        return taskRepository.save(task);
+    }
+
+    public void deleteTask(String id) {
+        taskRepository.deleteById(id);
+    }
+
+    private String generateRandomString() {
+        // Implement logic to generate random string
+        return "RandomString"; // Placeholder for simplicity
+    }
+}
+package com.example.taskapi;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/tasks")
+public class TaskController {
+
+    @Autowired
+    private TaskService taskService;
+
+    @GetMapping
+    public ResponseEntity<List<Task>> getAllTasks() {
+        List<Task> tasks = taskService.getAllTasks();
+        return new ResponseEntity<>(tasks, HttpStatus.OK);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Task> getTaskById(@PathVariable String id) {
+        Task task = taskService.getTaskById(id);
+        return task != null ? new ResponseEntity<>(task, HttpStatus.OK) : new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+    @GetMapping("/findByName")
+    public ResponseEntity<List<Task>> findTasksByName(@RequestParam String name) {
+        List<Task> tasks = taskService.findTasksByName(name);
+        return tasks.isEmpty() ? new ResponseEntity<>(HttpStatus.NOT_FOUND) : new ResponseEntity<>(tasks, HttpStatus.OK);
+    }
+
+    @GetMapping("/findFirst10ByAssignee")
+    public ResponseEntity<List<Task>> findFirst10TasksByAssignee(@RequestParam String assignee) {
+        List<Task> tasks = taskService.findFirst10TasksByAssignee(assignee);
+        return tasks.isEmpty() ? new ResponseEntity<>(HttpStatus.NOT_FOUND) : new ResponseEntity<>(tasks, HttpStatus.OK);
+    }
+
+    @PostMapping
+    public ResponseEntity<Task> createTask(@RequestBody Task task) {
+        Task createdTask = taskService.createTask(task);
+        return new ResponseEntity<>(createdTask, HttpStatus.CREATED);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable String id) {
+        taskService.deleteTask(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+}
+package com.example.taskapi;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+spring.data.mongodb.uri=mongodb://localhost:27017/taskdb
